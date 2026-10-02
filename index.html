@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>New Tab</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500&family=Outfit:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#06051a;--text:#f4eeff;--pink:#ff4fa3;--cyan:#5fe3ff}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;overflow:hidden;background:var(--ink)}
+body{font-family:Outfit,system-ui,sans-serif;color:var(--text)}
+.sky{position:fixed;inset:0;background:
+  radial-gradient(70% 45% at 62% 100%,rgba(255,79,163,.38),transparent 70%),
+  radial-gradient(50% 35% at 25% 100%,rgba(95,227,255,.22),transparent 70%),
+  linear-gradient(to bottom,#07061c 0%,#190f3e 45%,#3a1459 80%,#4d1a62 100%)}
+svg{position:fixed;left:0;bottom:0;width:100%;height:60vh}
+canvas{position:fixed;inset:0;pointer-events:none}
+.clock{position:fixed;left:7vw;top:16vh}
+.time{font-family:Unbounded,sans-serif;font-weight:500;font-size:clamp(52px,11vmin,130px);line-height:1;
+  text-shadow:0 0 28px rgba(95,227,255,.45),0 0 60px rgba(255,79,163,.25)}
+.date{margin-top:2vmin;font-size:clamp(16px,2.6vmin,28px);font-weight:500;color:var(--pink)}
+.hello{margin-top:.8vmin;font-size:clamp(14px,2.1vmin,22px);opacity:.7}
+</style>
+</head>
+<body>
+<div class="sky"></div>
+
+<svg viewBox="0 0 1600 500" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+  <g id="far"></g>
+  <g id="near"></g>
+  <rect x="0" y="448" width="1600" height="52" fill="#04030f"/>
+  <g id="refl"></g>
+</svg>
+
+<canvas id="rain"></canvas>
+
+<div class="clock">
+  <div class="time" id="time"></div>
+  <div class="date" id="date"></div>
+  <div class="hello" id="hello"></div>
+</div>
+
+<script>
+let s=11;const r=()=>(s=(s*16807)%2147483647)/2147483647;
+const $=id=>document.getElementById(id);
+
+// far skyline (hazy)
+let x=-20,o='';
+while(x<1620){const w=40+r()*70,h=140+r()*190;
+  o+=`<rect x="${x}" y="${448-h}" width="${w}" height="${h}" fill="#1d1348" opacity=".85"/>`;x+=w+r()*6}
+$('far').innerHTML=o;
+
+// near skyline, windows, neon signs, wet-street reflections
+const cols=['#ff4fa3','#5fe3ff','#b46bff'];
+x=-10;o='';let rf='';
+while(x<1620){const w=50+r()*80,h=90+r()*200,y=448-h;
+  o+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#08071c"/>`;
+  for(let wy=y+12;wy<430;wy+=16)for(let wx=x+8;wx<x+w-10;wx+=13)
+    if(r()<.22)o+=`<rect x="${wx}" y="${wy}" width="4" height="7" fill="${r()<.75?'#ffd98a':'#5fe3ff'}" opacity="${.45+r()*.5}"/>`;
+  if(r()<.5){const c=cols[Math.floor(r()*3)],sh=30+r()*70,sy=y+20+r()*(h-sh-40),sx=x+(r()<.5?3:w-8);
+    o+=`<rect x="${sx}" y="${sy}" width="5" height="${sh}" rx="2" fill="${c}" style="filter:drop-shadow(0 0 7px ${c})"/>`;
+    rf+=`<rect x="${sx-1}" y="450" width="7" height="${sh*.8}" fill="${c}" opacity=".35" style="filter:blur(4px)"/>`;}
+  x+=w+3+r()*8}
+$('near').innerHTML=o;$('refl').innerHTML=rf;
+
+// clock (24h, English)
+function tick(){
+  const n=new Date(),h=n.getHours();
+  $('time').textContent=n.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false});
+  $('date').textContent=n.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  $('hello').textContent=h>=5&&h<12?'Good morning':h>=12&&h<17?'Good afternoon':'Good evening';
+}
+tick();setInterval(tick,10000);
+
+// rain
+const cv=$('rain'),c=cv.getContext('2d');
+let W,H;const still=matchMedia('(prefers-reduced-motion:reduce)').matches;
+function size(){W=cv.width=innerWidth;H=cv.height=innerHeight}
+size();addEventListener('resize',size);
+const D=Array.from({length:150},()=>({x:Math.random()*W*1.1,y:Math.random()*H,l:10+Math.random()*14,v:14+Math.random()*10,a:.15+Math.random()*.2}));
+function draw(){
+  c.clearRect(0,0,W,H);c.lineWidth=1;
+  for(const d of D){
+    c.strokeStyle=`rgba(190,233,255,${d.a})`;
+    c.beginPath();c.moveTo(d.x,d.y);c.lineTo(d.x-d.l*.2,d.y+d.l);c.stroke();
+    d.y+=d.v;d.x-=d.v*.2;
+    if(d.y>H||d.x<-20){d.y=-20;d.x=Math.random()*W*1.1}
+  }
+  requestAnimationFrame(draw);
+}
+if(!still)draw();
+</script>
+</body>
+</html>
